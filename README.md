@@ -9,7 +9,7 @@ Uses `astroid` to parse the script AST.
 
 In development mode:
 
-```python
+```bash
 PYTHONPATH=. pylint --errors-only --load-plugins validation_order $SCRIPT_PATH
 ```
 
