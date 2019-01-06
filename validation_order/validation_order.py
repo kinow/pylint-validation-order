@@ -74,6 +74,7 @@ class ValidationOrderChecker(BaseChecker):
         # - if there are no variables in current if
         if current_if_variables:
             # otherwise, for each statement before the current if...
+            valid_case = False
             for stmt in self._current_function.body:
                 if stmt == self._current_if:
                     break
@@ -81,16 +82,16 @@ class ValidationOrderChecker(BaseChecker):
                 if isinstance(stmt, astroid.Assign):
                     stray_vars = self._get_variables(stmt.targets)
                     for stray_var in stray_vars:
-                        if stray_var not in current_if_variables:
-                            self.add_message('validation-order-error',
-                                             node=node, )
-                            print("HU?!")
+                        if stray_var in current_if_variables:
+                            valid_case = True
+            if not valid_case:
+                self.add_message('validation-order-error',
+                                 node=node, )
 
     def _get_variables(self, node):
         """
         :rtype: set
         """
-
         if isinstance(node, list):
             l = list()
             for n in node:
@@ -98,8 +99,8 @@ class ValidationOrderChecker(BaseChecker):
                     l.append(n.attrname)
                 elif hasattr(n, 'name'):
                     l.append(n.name)
-                else:
-                    print("UH!")
+                # else:
+                #     print("UH!")
             return set(l)
 
         if hasattr(node, 'args'):
@@ -114,7 +115,6 @@ class ValidationOrderChecker(BaseChecker):
                     t.add(n.name)
             elif hasattr(n, 'name'):
                 t.add(n.name)
-            else:
-                print("UH!")
-        # t = [x.name for x in names if x in x.parent.args]
+            # else:
+            #     print("UH!")
         return t
