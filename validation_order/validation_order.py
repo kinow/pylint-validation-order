@@ -3,6 +3,7 @@ import astroid
 from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 
+
 class UniqueReturnChecker(BaseChecker):
     __implements__ = IAstroidChecker
 
@@ -24,6 +25,7 @@ class UniqueReturnChecker(BaseChecker):
             }
         ),
     )
+
 
 def register(linter):
     linter.register_checker(UniqueReturnChecker(linter))
