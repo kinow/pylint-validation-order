@@ -21,3 +21,5 @@ on plugins.
 - Investigate if it is worth to check other statements besides `raise`
 - Check if besides variable declaration, we could also warn over other
 statements used
+- Consider the case when the previous statements are validation statements too
+- Check if the current-if is part of an if-else, then augment the variables
