@@ -4,28 +4,35 @@ from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 
 
-class UniqueReturnChecker(BaseChecker):
+class ValidationOrderChecker(BaseChecker):
     __implements__ = IAstroidChecker
 
-    name = 'unique-returns'
+    name = 'validation-order'
     priority = -1
     msgs = {
         'W0001': (
-            'Returns a non-unique constant.',
-            'non-unique-returns',
-            'All constants returned in a function should be unique.'
+            'Validation order could be different.',
+            'validation-order-error',
+            'The validation logic could be done sooner.'
         ),
     }
     options = (
-        (
-            'ignore-ints',
-            {
-                'default': False, 'type': 'yn', 'metavar' : '<y_or_n>',
-                'help': 'Allow returning non-unique integers',
-            }
-        ),
+        # (
+        #     'ignore-ints',
+        #     {
+        #         'default': False, 'type': 'yn', 'metavar' : '<y_or_n>',
+        #         'help': 'Allow returning non-unique integers',
+        #     }
+        # ),
     )
 
+    def __init__(self, linter=None):
+        BaseChecker.__init__(self, linter)
+        self._initialize()
 
-def register(linter):
-    linter.register_checker(UniqueReturnChecker(linter))
+    def _initialize(self):
+        print("Validation Order Checker Initialized!")
+
+    def visit_ifexp(self, node):
+        print("Node: " + str(node))
+
