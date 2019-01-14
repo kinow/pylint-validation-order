@@ -86,7 +86,8 @@ class ValidationOrderChecker(BaseChecker):
                             valid_case = True
             if not valid_case:
                 self.add_message('validation-order-error',
-                                 node=node, confidence=60)
+                                 node=node, confidence=60,
+                                 line=self._current_if.lineno)
 
     def _get_variables(self, node):
         """
