@@ -1,6 +1,6 @@
 import astroid
-
 from pylint.testutils import CheckerTestCase, Message
+
 from validation_order.validation_order import ValidationOrderChecker
 
 
