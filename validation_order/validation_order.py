@@ -61,22 +61,20 @@ class ValidationOrderChecker(BaseChecker):
                 and len(self._current_if.body) == 1:
             self._check_validation_order(node)
 
+    # --- private methods ---
+
+    @staticmethod
     def _get_variables(self, node):
         """
         Retrieve a set of variables for a given node, or list of nodes.
+
         :param node: a node
         :type node: astroid.node_classes.NodeNG
         :return: set of variables (strings)
         :rtype: set
         """
         if isinstance(node, list):
-            l = list()
-            for n in node:
-                if hasattr(n, 'name'):
-                    l.append(n.name)
-                # else:
-                #     print("UH!")
-            return set(l)
+            return set([n.name for n in node if hasattr(n, "name")])
 
         if hasattr(node, 'args'):
             l = [x.name for x in node.args]
@@ -90,12 +88,12 @@ class ValidationOrderChecker(BaseChecker):
                     t.add(n.name)
             elif hasattr(n, 'name'):
                 t.add(n.name)
-            # else:
-            #     print("UH!")
         return t
 
     def _check_validation_order(self, node):
         """
+        Logic to check the validation order.
+
         :type node: astroid.nodes.Raise
         """
         # skip if:
