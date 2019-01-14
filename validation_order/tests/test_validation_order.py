@@ -31,7 +31,7 @@ class TestValidationOrder(CheckerTestCase):
         with self.assertNoMessages():
             self.walk(stmt)
 
-    def test_good_validation_order_1(self):
+    def test_good_validation_order_2(self):
         stmt = astroid.extract_node(
             '''
         def some_method():
