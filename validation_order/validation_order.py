@@ -78,6 +78,8 @@ class ValidationOrderChecker(BaseChecker):
                 # we must check if there were any assign ops before
                 if isinstance(stmt, astroid.Assign):
                     stray_vars = self._get_variables(stmt.targets)
+                    if hasattr(stmt.value, "args"):
+                        stray_vars.update(self._get_variables(stmt.value.args))
                     for stray_var in stray_vars:
                         if stray_var in current_if_variables:
                             valid_case = True

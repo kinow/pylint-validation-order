@@ -23,8 +23,20 @@ class TestValidationOrder(CheckerTestCase):
     def test_good_validation_order_1(self):
         stmt = astroid.extract_node(
             '''
-        def some_method():
+        def some_method(self):
             if self.today_date > 2:
+                raise Exception("Invalid value for N!")
+        '''
+        )
+        with self.assertNoMessages():
+            self.walk(stmt)
+
+    def test_good_validation_order_1(self):
+        stmt = astroid.extract_node(
+            '''
+        def some_method():
+            n = do_something(today_date)
+            if today_date > 2:
                 raise Exception("Invalid value for N!")
         '''
         )
