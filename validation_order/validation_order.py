@@ -96,9 +96,7 @@ class ValidationOrderChecker(BaseChecker):
         if isinstance(node, list):
             l = list()
             for n in node:
-                if hasattr(n, 'attrname'):
-                    l.append(n.attrname)
-                elif hasattr(n, 'name'):
+                if hasattr(n, 'name'):
                     l.append(n.name)
                 # else:
                 #     print("UH!")
