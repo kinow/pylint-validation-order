@@ -64,7 +64,7 @@ class ValidationOrderChecker(BaseChecker):
     # --- private methods ---
 
     @staticmethod
-    def _get_variables(self, node):
+    def _get_variables(node):
         """
         Retrieve a set of variables for a given node, or list of nodes.
 
@@ -73,22 +73,29 @@ class ValidationOrderChecker(BaseChecker):
         :return: set of variables (strings)
         :rtype: set
         """
+        variables = set()
+
         if isinstance(node, list):
-            return set([n.name for n in node if hasattr(n, "name")])
+            for single_node in node:
+                if hasattr(single_node, "name"):
+                    variables.add(single_node.name)
+            return variables
 
         if hasattr(node, 'args'):
-            l = [x.name for x in node.args]
-            return set(l)
+            for arg_node in node.args:
+                if hasattr(arg_node, "name"):
+                    variables.add(arg_node.name)
+            return variables
 
-        t = set()
         names = list(node.nodes_of_class(astroid.nodes.Name))
-        for n in names:
-            if hasattr(n.parent, 'args'):
-                if n in n.parent.args:
-                    t.add(n.name)
-            elif hasattr(n, 'name'):
-                t.add(n.name)
-        return t
+        for name_node in names:
+            if hasattr(name_node.parent, 'args'):
+                if name_node in name_node.parent.args:
+                    variables.add(name_node.name)
+            elif hasattr(name_node, 'name'):
+                variables.add(name_node.name)
+
+        return variables
 
     def _check_validation_order(self, node):
         """
