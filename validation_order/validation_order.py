@@ -10,7 +10,7 @@ class ValidationOrderChecker(BaseChecker):
     name = 'validation-order'
     priority = -1
     msgs = {
-        'W3331': (
+        'E3331': (
             'Validation order could be different.',
             'validation-order-error',
             'The validation logic could be done sooner.'
@@ -86,7 +86,7 @@ class ValidationOrderChecker(BaseChecker):
                             valid_case = True
             if not valid_case:
                 self.add_message('validation-order-error',
-                                 node=node, )
+                                 node=node, confidence=60)
 
     def _get_variables(self, node):
         """
