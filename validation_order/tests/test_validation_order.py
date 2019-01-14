@@ -55,6 +55,19 @@ class TestValidationOrder(CheckerTestCase):
         with self.assertNoMessages():
             self.walk(stmt)
 
+    def test_good_validation_order_4(self):
+        stmt = astroid.extract_node(
+            '''
+        def some_method(today_date):
+            if today_date:
+                tomorrow_date = 10
+            if tomorrow_date > 2:
+                raise Exception("Invalid value for tomorrow_date!")
+        '''
+        )
+        with self.assertNoMessages():
+            self.walk(stmt)
+
     def test_bad_validation_order_dangling_variable(self):
         stmt = astroid.extract_node(
             '''
