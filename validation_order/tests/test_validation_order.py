@@ -1,4 +1,5 @@
 import astroid
+from astroid.node_classes import NodeNG
 from pylint.testutils import CheckerTestCase, Message
 
 from validation_order.validation_order import ValidationOrderChecker
@@ -38,12 +39,14 @@ class TestValidationOrder(CheckerTestCase):
             if n > 2:
                 raise Exception("Invalid value for N!")
         '''
-        )
+        )  # type: astroid.node_classes.NodeNG
+        node = list(stmt.nodes_of_class(astroid.node_classes.Raise))[0]
         with self.assertAddsMessages(
                 Message(
                     "validation-order-error",
                     line=4,
-                    confidence=60
+                    confidence=60,
+                    node=node
                 )
         ):
             self.walk(stmt)

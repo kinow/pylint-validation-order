@@ -64,9 +64,6 @@ class ValidationOrderChecker(BaseChecker):
         # - if the current if is the first statement in the current function
         if self._current_function.body[0] == self._current_if:
             return
-        # - if the current if's test is None
-        if self._current_if.test is None:
-            return
 
         current_if_variables = self._get_variables(self._current_if.test)
         # current_function_variables = self._get_variables(self._current_function.args)
@@ -87,6 +84,7 @@ class ValidationOrderChecker(BaseChecker):
             if not valid_case:
                 self.add_message('validation-order-error',
                                  confidence=60,
+                                 node=node,
                                  line=self._current_if.lineno)
 
     def _get_variables(self, node):
