@@ -5,6 +5,7 @@ from pylint.interfaces import IAstroidChecker
 
 
 class ValidationOrderChecker(BaseChecker):
+    """Checks the order of validation in the code."""
     __implements__ = IAstroidChecker
 
     name = 'validation-order'
@@ -16,25 +17,26 @@ class ValidationOrderChecker(BaseChecker):
             'The validation logic could be done sooner.'
         ),
     }
-    options = (
-        # (
-        #     'ignore-ints',
-        #     {
-        #         'default': False, 'type': 'yn', 'metavar' : '<y_or_n>',
-        #         'help': 'Allow returning non-unique integers',
-        #     }
-        # ),
-    )
 
     def __init__(self, linter=None):
+        """
+        :param linter: PyLint linter
+        :type linter: pylint.lint.PyLinter
+        """
         BaseChecker.__init__(self, linter)
         self._current_function = None  # type: astroid.nodes.FunctionDef
         self._current_if = None  # type: astroid.nodes.If
 
     def visit_functiondef(self, node):
+        """
+        :type node: astroid.nodes.FunctionDef
+        """
         self._current_function = node
 
     def leave_functiondef(self, node):
+        """
+        :type node: astroid.nodes.FunctionDef
+        """
         self._current_function = None
 
     def visit_if(self, node):
@@ -45,6 +47,9 @@ class ValidationOrderChecker(BaseChecker):
         self._current_if = node
 
     def leave_if(self, node):
+        """
+        :type node: astroid.nodes.Raise
+        """
         self._current_if = None
 
     def visit_raise(self, node):
@@ -55,6 +60,39 @@ class ValidationOrderChecker(BaseChecker):
         if node.parent == self._current_if \
                 and len(self._current_if.body) == 1:
             self._check_validation_order(node)
+
+    def _get_variables(self, node):
+        """
+        Retrieve a set of variables for a given node, or list of nodes.
+        :param node: a node
+        :type node: astroid.node_classes.NodeNG
+        :return: set of variables (strings)
+        :rtype: set
+        """
+        if isinstance(node, list):
+            l = list()
+            for n in node:
+                if hasattr(n, 'name'):
+                    l.append(n.name)
+                # else:
+                #     print("UH!")
+            return set(l)
+
+        if hasattr(node, 'args'):
+            l = [x.name for x in node.args]
+            return set(l)
+
+        t = set()
+        names = list(node.nodes_of_class(astroid.nodes.Name))
+        for n in names:
+            if hasattr(n.parent, 'args'):
+                if n in n.parent.args:
+                    t.add(n.name)
+            elif hasattr(n, 'name'):
+                t.add(n.name)
+            # else:
+            #     print("UH!")
+        return t
 
     def _check_validation_order(self, node):
         """
@@ -89,31 +127,3 @@ class ValidationOrderChecker(BaseChecker):
                                  node=node,
                                  line=self._current_if.lineno)
 
-    def _get_variables(self, node):
-        """
-        :rtype: set
-        """
-        if isinstance(node, list):
-            l = list()
-            for n in node:
-                if hasattr(n, 'name'):
-                    l.append(n.name)
-                # else:
-                #     print("UH!")
-            return set(l)
-
-        if hasattr(node, 'args'):
-            l = [x.name for x in node.args]
-            return set(l)
-
-        t = set()
-        names = list(node.nodes_of_class(astroid.nodes.Name))
-        for n in names:
-            if hasattr(n.parent, 'args'):
-                if n in n.parent.args:
-                    t.add(n.name)
-            elif hasattr(n, 'name'):
-                t.add(n.name)
-            # else:
-            #     print("UH!")
-        return t
