@@ -58,8 +58,11 @@ class ValidationOrderChecker(BaseChecker):
         """
 
         if node.parent == self._current_if \
-                and len(self._current_if.body) == 1:
-            self._check_validation_order(node)
+                and len(self._current_if.body) == 1 \
+                and self._current_function.body[0] != self._current_if:
+            if_variables = self._get_variables(self._current_if.test)
+            if if_variables:
+                self._check_validation_order(node, if_variables)
 
     # --- private methods ---
 
@@ -102,33 +105,23 @@ class ValidationOrderChecker(BaseChecker):
         Logic to check the validation order.
 
         :type node: astroid.nodes.Raise
+        :type if_variables: set
         """
-        # skip if:
-        # - if the current if is the first statement in the current function
-        if self._current_function.body[0] == self._current_if:
-            return
-
-        current_if_variables = self._get_variables(self._current_if.test)
-        # current_function_variables = self._get_variables(self._current_function.args)
-
-        # - if there are no variables in current if
-        if current_if_variables:
-            # otherwise, for each statement before the current if...
-            valid_case = False
-            for stmt in self._current_function.body:
-                if stmt == self._current_if:
-                    break
-                # we must check if there were any assign ops before
-                if isinstance(stmt, astroid.Assign):
-                    stray_vars = self._get_variables(stmt.targets)
-                    if hasattr(stmt.value, "args"):
-                        stray_vars.update(self._get_variables(stmt.value.args))
-                    for stray_var in stray_vars:
-                        if stray_var in current_if_variables:
-                            valid_case = True
-            if not valid_case:
-                self.add_message('validation-order-error',
-                                 confidence=60,
-                                 node=node,
-                                 line=self._current_if.lineno)
+        valid_case = False
+        for stmt in self._current_function.body:
+            if stmt == self._current_if:
+                break
+            # we must check if there were any assign ops before
+            if isinstance(stmt, astroid.Assign):
+                stray_vars = self._get_variables(stmt.targets)
+                if hasattr(stmt.value, "args"):
+                    stray_vars.update(self._get_variables(stmt.value.args))
+                for stray_var in stray_vars:
+                    if stray_var in if_variables:
+                        valid_case = True
+        if not valid_case:
+            self.add_message('validation-order-error',
+                             confidence=60,
+                             node=node,
+                             line=self._current_if.lineno)
 
