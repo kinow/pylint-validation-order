@@ -4,6 +4,18 @@ from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 
 
+class ValidationOrderException(Exception):
+
+    def __init__(self,
+                 node: astroid.node_classes.NodeNG = None,
+                 lineno: int = 0,
+                 confidence: int = 60):
+        super().__init__()
+        self.node = node
+        self.lineno = lineno
+        self.confidence = confidence
+
+
 class ValidationOrderChecker(BaseChecker):
     """Checks the order of validation in the code."""
     __implements__ = IAstroidChecker
@@ -62,7 +74,13 @@ class ValidationOrderChecker(BaseChecker):
                 and self._current_function.body[0] != self._current_if:
             if_variables = self._get_variables(self._current_if.test)
             if if_variables:
-                self._check_validation_order(node, if_variables)
+                try:
+                    self._check_validation_order(node, if_variables)
+                except ValidationOrderException as e:
+                    self.add_message('validation-order-error',
+                                     confidence=e.confidence,
+                                     node=e.node,
+                                     line=e.lineno)
 
     # --- private methods ---
 
@@ -106,6 +124,7 @@ class ValidationOrderChecker(BaseChecker):
 
         :type node: astroid.nodes.Raise
         :type if_variables: set
+        :raises: ValidationOrderException
         """
         valid_case = False
         for stmt in self._current_function.body:
@@ -120,8 +139,7 @@ class ValidationOrderChecker(BaseChecker):
                     if stray_var in if_variables:
                         valid_case = True
         if not valid_case:
-            self.add_message('validation-order-error',
-                             confidence=60,
-                             node=node,
-                             line=self._current_if.lineno)
+            raise ValidationOrderException(
+                node=node,
+                lineno=self._current_if.lineno)
 
