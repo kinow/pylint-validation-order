@@ -1,5 +1,4 @@
 import astroid
-from astroid.node_classes import NodeNG
 from pylint.testutils import CheckerTestCase, Message
 
 from validation_order.validation_order import ValidationOrderChecker
