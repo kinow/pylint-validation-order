@@ -4,16 +4,8 @@ from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 
 
-class ValidationOrderException(Exception):
-
-    def __init__(self,
-                 node: astroid.node_classes.NodeNG = None,
-                 lineno: int = 0,
-                 confidence: int = 60):
-        super().__init__()
-        self.node = node
-        self.lineno = lineno
-        self.confidence = confidence
+ERROR_MESSAGE_ID = "validation-order-error"
+WARNING_MESSAGE_ID = "validation-order-warning"
 
 
 class ValidationOrderChecker(BaseChecker):
@@ -25,9 +17,14 @@ class ValidationOrderChecker(BaseChecker):
     msgs = {
         'E3331': (
             'Validation order could be different.',
-            'validation-order-error',
+            ERROR_MESSAGE_ID,
             'The validation logic could be done sooner.'
         ),
+        'W3332': (
+            'Validation order could be different?',
+            WARNING_MESSAGE_ID,
+            'The validation logic - maybe - could be done sooner?'
+        )
     }
 
     def __init__(self, linter=None):
@@ -130,14 +127,7 @@ class ValidationOrderChecker(BaseChecker):
         for stmt in self._current_function.body:
             if stmt == self._current_if:
                 break
-
-            try:
-                self._check_node(stmt, if_variables)
-            except ValidationOrderException as e:
-                self.add_message('validation-order-error',
-                                 confidence=e.confidence,
-                                 node=node,
-                                 line=e.lineno)
+            self._check_node(stmt, if_variables)
 
     def _check_node(self, node, if_variables):
         """
@@ -150,22 +140,45 @@ class ValidationOrderChecker(BaseChecker):
 
         # we must check if there were any assign ops before
         if isinstance(node, astroid.Assign):
-            # a, b = ..., a and b are targets
-            stray_vars = self._get_variables(node.targets)
-            if hasattr(node.value, "args"):
-                # a, b = _do_something(c), c is in args
-                stray_vars.update(self._get_variables(node.value.args))
-            for stray_var in stray_vars:
-                if stray_var in if_variables:
-                    return
-
-        raise ValidationOrderException(
-            node=node,
-            lineno=self._current_if.lineno)
+            self.check_assign(node, if_variables)
 
         # we must check if it is an if
-        # if isinstance(node, astroid.If):
-        #     if_vars = self._get_variables(node.test)
-        #     for if_var in if_vars:
-        #         if if_var in if_variables:
-        #             return
+        elif isinstance(node, astroid.If):
+            self.check_if(node, if_variables)
+
+        else:
+            # here we are too sure about what we have?
+            self.add_message(WARNING_MESSAGE_ID,
+                             confidence=60,
+                             node=node,
+                             line=self._current_if.lineno)
+
+    def check_assign(self, node: astroid.Assign, if_variables: set):
+        # a, b = ..., a and b are targets
+        stray_vars = self._get_variables(node.targets)
+        if hasattr(node.value, "args"):
+            # a, b = _do_something(c), c is in args
+            stray_vars.update(self._get_variables(node.value.args))
+        for stray_var in stray_vars:
+            if stray_var in if_variables:
+                return
+
+        # here we have an error
+        self.add_message(ERROR_MESSAGE_ID,
+                         confidence=60,
+                         node=node,
+                         line=self._current_if.lineno)
+
+    def check_if(self, node, if_variables):
+        # if property_being_validated != 0: ...
+        # or
+        # if some_method(property_being_validated): ...
+        if_vars = self._get_variables(node.test)
+        for if_var in if_vars:
+            if if_var in if_variables:
+                return
+        # if whatever:
+        #   property_being_validated = 1
+        assigns = node.nodes_of_class(astroid.Assign)
+        for assign in assigns:
+            self.check_assign(assign, if_variables)
