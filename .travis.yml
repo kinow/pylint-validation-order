@@ -1,0 +1,37 @@
+---
+language: python
+
+python:
+  - 3.4
+  - 3.5
+  - 3.6
+  - 3.7-dev
+
+matrix:
+  fast_finish: true
+  exclude:
+    - python: 3.4
+      env: RUN_COVERAGE=true
+    - python: 3.5
+      env: RUN_COVERAGE=true
+    - python: 3.6
+      env: RUN_COVERAGE=false
+    - python: 3.7-dev
+      env: RUN_COVERAGE=true
+
+before_install:
+  # Coverage dependencies
+  - pip install coverage pytest-cov
+  # Code style dependencies
+  - pip install pycodestyle
+
+before_script:
+  - pycodestyle --max-line-length 120 -v validation_order
+
+script:
+  - pytest
+
+after_success:
+  - coverage xml --ignore-errors
+  # Report metrics, such as coverage
+  - '"${RUN_COVERAGE:-false}" && bash <(curl -s https://codecov.io/bash)'
