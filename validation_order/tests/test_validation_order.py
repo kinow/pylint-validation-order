@@ -76,7 +76,7 @@ class TestValidationOrder(CheckerTestCase):
                 raise Exception("Invalid value for N!")
         '''
         )  # type: astroid.node_classes.NodeNG
-        node = list(stmt.nodes_of_class(astroid.node_classes.Assign))[0]
+        node = list(stmt.nodes_of_class(astroid.node_classes.Raise))[0]
         with self.assertAddsMessages(
                 Message(
                     ERROR_MESSAGE_ID,

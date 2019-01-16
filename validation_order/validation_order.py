@@ -3,7 +3,6 @@ import astroid
 from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
 
-
 ERROR_MESSAGE_ID = "validation-order-error"
 WARNING_MESSAGE_ID = "validation-order-warning"
 
@@ -35,6 +34,7 @@ class ValidationOrderChecker(BaseChecker):
         BaseChecker.__init__(self, linter)
         self._current_function = None  # type: astroid.nodes.FunctionDef
         self._current_if = None  # type: astroid.nodes.If
+        self._messages_added = set()
 
     def visit_functiondef(self, node):
         """
@@ -66,7 +66,7 @@ class ValidationOrderChecker(BaseChecker):
         :type node: astroid.nodes.Raise
         """
         if self._is_validation_node(node, self._current_if) \
-           and not self._is_first_statement(self._current_if, self._current_function):
+                and not self._is_first_statement(self._current_if, self._current_function):
             if_variables = self._get_variables(self._current_if.test)
             if if_variables:
                 self._check_validation_order(node, if_variables)
@@ -127,9 +127,9 @@ class ValidationOrderChecker(BaseChecker):
         for stmt in self._current_function.body:
             if stmt == self._current_if:
                 break
-            self._check_node(stmt, if_variables)
+            self._check_node(node, stmt, if_variables)
 
-    def _check_node(self, node, if_variables):
+    def _check_node(self, parent_node, node, if_variables):
         """
         Logic to check the validation order of a single node.
 
@@ -140,45 +140,47 @@ class ValidationOrderChecker(BaseChecker):
 
         # we must check if there were any assign ops before
         if isinstance(node, astroid.Assign):
-            self.check_assign(node, if_variables)
-
+            self.check_assign(parent_node, node, if_variables)
         # we must check if it is an if
         elif isinstance(node, astroid.If):
-            self.check_if(node, if_variables)
-
+            self.check_if(parent_node, node, if_variables)
         else:
             # here we are too sure about what we have?
-            self.add_message(WARNING_MESSAGE_ID,
-                             confidence=60,
-                             node=node,
-                             line=self._current_if.lineno)
+            if (self._current_if.lineno, node, WARNING_MESSAGE_ID) not in self._messages_added:
+                self._messages_added.add((self._current_if.lineno, node, WARNING_MESSAGE_ID))
+                self.add_message(WARNING_MESSAGE_ID,
+                                 confidence=60,
+                                 node=node,
+                                 line=self._current_if.lineno)
 
-    def check_assign(self, node: astroid.Assign, if_variables: set):
+    def check_assign(self, node: astroid.node_classes.NodeNG, assign_node: astroid.Assign, if_variables: set):
         # a, b = ..., a and b are targets
-        stray_vars = self._get_variables(node.targets)
-        if hasattr(node.value, "args"):
+        stray_vars = self._get_variables(assign_node.targets)
+        if hasattr(assign_node.value, "args"):
             # a, b = _do_something(c), c is in args
-            stray_vars.update(self._get_variables(node.value.args))
+            stray_vars.update(self._get_variables(assign_node.value.args))
         for stray_var in stray_vars:
             if stray_var in if_variables:
                 return
 
         # here we have an error
-        self.add_message(ERROR_MESSAGE_ID,
-                         confidence=60,
-                         node=node,
-                         line=self._current_if.lineno)
+        if (self._current_if.lineno, node, ERROR_MESSAGE_ID) not in self._messages_added:
+            self._messages_added.add((self._current_if.lineno, node, ERROR_MESSAGE_ID))
+            self.add_message(ERROR_MESSAGE_ID,
+                             confidence=60,
+                             node=node,
+                             line=self._current_if.lineno)
 
-    def check_if(self, node, if_variables):
+    def check_if(self, node: astroid.node_classes.NodeNG, if_node: astroid.If, if_variables: set):
         # if property_being_validated != 0: ...
         # or
         # if some_method(property_being_validated): ...
-        if_vars = self._get_variables(node.test)
+        if_vars = self._get_variables(if_node.test)
         for if_var in if_vars:
             if if_var in if_variables:
                 return
         # if whatever:
         #   property_being_validated = 1
-        assigns = node.nodes_of_class(astroid.Assign)
+        assigns = if_node.nodes_of_class(astroid.Assign)
         for assign in assigns:
-            self.check_assign(assign, if_variables)
+            self.check_assign(node, assign, if_variables)
