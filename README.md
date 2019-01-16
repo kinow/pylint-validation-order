@@ -23,3 +23,4 @@ on plugins.
 statements used
 - Consider the case when the previous statements are validation statements too
 - Check if the current-if is part of an if-else, then augment the variables
+- Ignore when parent node is an `except`
