@@ -6,6 +6,9 @@ python:
   - 3.5
   - 3.6
   - 3.7-dev
+env:
+  - RUN_COVERAGE=false
+  - RUN_COVERAGE=true
 
 matrix:
   fast_finish: true
