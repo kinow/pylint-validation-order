@@ -69,7 +69,7 @@ class ValidationOrderChecker(BaseChecker):
         :type node: astroid.nodes.Raise
         """
         if self._is_validation_node(node, self._current_if) \
-           and self._is_first_statement(self._current_if, self._current_function):
+           and not self._is_first_statement(self._current_if, self._current_function):
             if_variables = self._get_variables(self._current_if.test)
             if if_variables:
                 self._check_validation_order(node, if_variables)
@@ -132,11 +132,11 @@ class ValidationOrderChecker(BaseChecker):
                 break
 
             try:
-                self._check_node(node, if_variables)
+                self._check_node(stmt, if_variables)
             except ValidationOrderException as e:
                 self.add_message('validation-order-error',
                                  confidence=e.confidence,
-                                 node=e.node,
+                                 node=node,
                                  line=e.lineno)
 
     def _check_node(self, node, if_variables):
@@ -159,13 +159,13 @@ class ValidationOrderChecker(BaseChecker):
                 if stray_var in if_variables:
                     return
 
-            raise ValidationOrderException(
-                node=node,
-                lineno=self._current_if.lineno)
+        raise ValidationOrderException(
+            node=node,
+            lineno=self._current_if.lineno)
 
         # we must check if it is an if
-        if isinstance(node, astroid.If):
-            if_vars = self._get_variables(node.test)
-            for if_var in if_vars:
-                if if_var in if_variables:
-                    return
+        # if isinstance(node, astroid.If):
+        #     if_vars = self._get_variables(node.test)
+        #     for if_var in if_vars:
+        #         if if_var in if_variables:
+        #             return
