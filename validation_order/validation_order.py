@@ -68,14 +68,22 @@ class ValidationOrderChecker(BaseChecker):
         """
         :type node: astroid.nodes.Raise
         """
-        if node.parent == self._current_if \
-                and len(self._current_if.body) == 1 \
-                and self._current_function.body[0] != self._current_if:
+        if self._is_validation_node(node, self._current_if) \
+           and self._is_first_statement(self._current_if, self._current_function):
             if_variables = self._get_variables(self._current_if.test)
             if if_variables:
                 self._check_validation_order(node, if_variables)
 
     # --- private methods ---
+
+    @staticmethod
+    def _is_validation_node(raise_node: astroid.Raise, if_node: astroid.If):
+        return raise_node.parent == if_node \
+               and len(if_node.body) == 1
+
+    @staticmethod
+    def _is_first_statement(if_node: astroid.If, function_def: astroid.FunctionDef):
+        return function_def.body[0] == if_node
 
     @staticmethod
     def _get_variables(node):
@@ -154,3 +162,10 @@ class ValidationOrderChecker(BaseChecker):
             raise ValidationOrderException(
                 node=node,
                 lineno=self._current_if.lineno)
+
+        # we must check if it is an if
+        if isinstance(node, astroid.If):
+            if_vars = self._get_variables(node.test)
+            for if_var in if_vars:
+                if if_var in if_variables:
+                    return
