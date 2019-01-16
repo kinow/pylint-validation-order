@@ -66,6 +66,7 @@ class ValidationOrderChecker(BaseChecker):
         :type node: astroid.nodes.Raise
         """
         if self._is_validation_node(node, self._current_if) \
+                and self._current_if.parent == self._current_function \
                 and not self._is_first_statement(self._current_if, self._current_function):
             if_variables = self._get_variables(self._current_if.test)
             if if_variables:
