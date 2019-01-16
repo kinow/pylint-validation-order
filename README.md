@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/kinow/pylint-validation-order.svg?branch=master)](https://travis-ci.org/kinow/pylint-validation-order)
+[![codecov](https://codecov.io/gh/kinow/pylint-validation-order/branch/master/graph/badge.svg)](https://codecov.io/gh/kinow/pylint-validation-order)
+
 # PyLint Validation Order
 
 A PyLint plugin that tries to locate `if` statements, where validation
