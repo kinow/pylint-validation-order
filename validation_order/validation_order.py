@@ -73,13 +73,7 @@ class ValidationOrderChecker(BaseChecker):
                 and self._current_function.body[0] != self._current_if:
             if_variables = self._get_variables(self._current_if.test)
             if if_variables:
-                try:
-                    self._check_validation_order(node, if_variables)
-                except ValidationOrderException as e:
-                    self.add_message('validation-order-error',
-                                     confidence=e.confidence,
-                                     node=e.node,
-                                     line=e.lineno)
+                self._check_validation_order(node, if_variables)
 
     # --- private methods ---
 
@@ -125,20 +119,38 @@ class ValidationOrderChecker(BaseChecker):
         :type if_variables: set
         :raises: ValidationOrderException
         """
-        valid_case = False
         for stmt in self._current_function.body:
             if stmt == self._current_if:
                 break
-            # we must check if there were any assign ops before
-            if isinstance(stmt, astroid.Assign):
-                stray_vars = self._get_variables(stmt.targets)
-                if hasattr(stmt.value, "args"):
-                    stray_vars.update(self._get_variables(stmt.value.args))
-                for stray_var in stray_vars:
-                    if stray_var in if_variables:
-                        valid_case = True
-        if not valid_case:
+
+            try:
+                self._check_node(node, if_variables)
+            except ValidationOrderException as e:
+                self.add_message('validation-order-error',
+                                 confidence=e.confidence,
+                                 node=e.node,
+                                 line=e.lineno)
+
+    def _check_node(self, node, if_variables):
+        """
+        Logic to check the validation order of a single node.
+
+        :type node: astroid.nodes.Raise
+        :type if_variables: set
+        :raises: ValidationOrderException
+        """
+
+        # we must check if there were any assign ops before
+        if isinstance(node, astroid.Assign):
+            # a, b = ..., a and b are targets
+            stray_vars = self._get_variables(node.targets)
+            if hasattr(node.value, "args"):
+                # a, b = _do_something(c), c is in args
+                stray_vars.update(self._get_variables(node.value.args))
+            for stray_var in stray_vars:
+                if stray_var in if_variables:
+                    return
+
             raise ValidationOrderException(
                 node=node,
                 lineno=self._current_if.lineno)
-
