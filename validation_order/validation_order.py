@@ -68,7 +68,6 @@ class ValidationOrderChecker(BaseChecker):
         """
         :type node: astroid.nodes.Raise
         """
-
         if node.parent == self._current_if \
                 and len(self._current_if.body) == 1 \
                 and self._current_function.body[0] != self._current_if:
@@ -118,7 +117,7 @@ class ValidationOrderChecker(BaseChecker):
 
         return variables
 
-    def _check_validation_order(self, node):
+    def _check_validation_order(self, node, if_variables):
         """
         Logic to check the validation order.
 
